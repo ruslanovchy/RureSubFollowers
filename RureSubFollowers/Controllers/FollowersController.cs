@@ -65,22 +65,12 @@ public class FollowersController : Controller
         var followerRedisId = await redisDb.StringGetAsync(followerRedisIdKey);
         var followingRedisId = await redisDb.StringGetAsync(followingRedisIdKey);
 
-        if (followerRedisId.IsNull)
+        if (!followerRedisId.IsNull && !followingRedisId.IsNull)
         {
-            var newId = snowflakeIdGenerator.NextId();
-            await redisDb.StringSetAsync(followerRedisIdKey, newId);
-            followerRedisIdKey = newId.ToString();
+            var followedAtOffset = new DateTimeOffset(subscription.FollowedAt).ToUnixTimeMilliseconds();
+            var isFollowerAdded = await redisDb.SortedSetAddAsync($"user:{followerRedisId}:followings", followingRedisId, followedAtOffset);
+            var isFollowingAdded = await redisDb.SortedSetAddAsync($"user:{followingRedisId}:followers", followerRedisId, followedAtOffset);
         }
-        if (followingRedisId.IsNull)
-        {
-            var newId = snowflakeIdGenerator.NextId();
-            await redisDb.StringSetAsync(followingRedisIdKey, newId);
-            followingRedisId = newId.ToString();
-        }
-
-        var followedAtOffset = new DateTimeOffset(subscription.FollowedAt).ToUnixTimeMilliseconds();
-        var isFollowerAdded = await redisDb.SortedSetAddAsync($"user:{followerRedisId}:following", followingRedisId, followedAtOffset); 
-        var isFollowingAdded = await redisDb.SortedSetAddAsync($"user:{followingRedisId}:followers", followerRedisId, followedAtOffset);
 
         #endregion
 
@@ -137,7 +127,7 @@ public class FollowersController : Controller
 
         if (!followerRedisId.IsNull && !followingRedisId.IsNull)
         {
-            var isFollowerAdded = await redisDb.SortedSetRemoveAsync($"user:{followerRedisId}:following", followingRedisId);
+            var isFollowerAdded = await redisDb.SortedSetRemoveAsync($"user:{followerRedisId}:followings", followingRedisId);
             var isFollowingAdded = await redisDb.SortedSetRemoveAsync($"user:{followingRedisId}:followers", followerRedisId);
         }
 

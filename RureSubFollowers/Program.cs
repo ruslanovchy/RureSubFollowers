@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using RureSubFollowers.Model;
 using RureSubFollowers.Services;
+using RureSubFollowers.Workers;
 using RureSubIdentity.Services;
 using StackExchange.Redis;
 using System.Text;
@@ -97,7 +98,7 @@ builder.Services.AddAuthentication(options =>
 
 #endregion
 
-#region
+#region Db
 
 var dbConnectionString = builder.Configuration.GetConnectionString("Db");
 
@@ -114,6 +115,7 @@ builder.Services.AddDbContext<FollowersDbContext>(options =>
 #endregion
 
 builder.Services.AddHostedService<OutboxWorker>();
+builder.Services.AddHostedService<ProfileCreatedWorker>();
 
 var app = builder.Build();
 
